@@ -11909,6 +11909,9 @@
         }
       }
     },
+    "Keep the pet visible while Claude is idle" : {
+
+    },
     "Layout Preview" : {
       "localizations" : {
         "ar" : {
@@ -12008,6 +12011,9 @@
           }
         }
       }
+    },
+    "Listening on port %@" : {
+
     },
     "Lottie JSON URL" : {
       "localizations" : {
@@ -15010,6 +15016,9 @@
         }
       }
     },
+    "Not listening" : {
+
+    },
     "Not Now" : {
       "localizations" : {
         "ar" : {
@@ -16409,6 +16418,9 @@
           }
         }
       }
+    },
+    "Preview" : {
+
     },
     "Progress bar style" : {
       "localizations" : {
@@ -18011,6 +18023,9 @@
         }
       }
     },
+    "Run the hook installer in Scripts/install-claude-pet-hooks.sh to connect Claude Code." : {
+
+    },
     "Running" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -19011,6 +19026,9 @@
           }
         }
       }
+    },
+    "Show Claude Code pet" : {
+
     },
     "Show cool face animation while inactive" : {
       "localizations" : {

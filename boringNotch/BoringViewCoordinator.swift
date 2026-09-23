@@ -100,6 +100,7 @@ class BoringViewCoordinator: ObservableObject {
     @Published var optionKeyPressed: Bool = true
     private var accessibilityObserver: Any?
     private var hudReplacementCancellable: AnyCancellable?
+    private var claudePetCancellable: AnyCancellable?
 
     private init() {
         // Perform migration from name-based to UUID-based storage
@@ -134,6 +135,21 @@ class BoringViewCoordinator: ObservableObject {
                 }
             }
         }
+
+        // Claude pet: only hold a socket open while the feature is switched on.
+        if Defaults[.showClaudePet] {
+            Task { @MainActor in ClaudeCodeMonitor.shared.start() }
+        }
+        claudePetCancellable = Defaults.publisher(.showClaudePet)
+            .sink { change in
+                Task { @MainActor in
+                    if change.newValue {
+                        ClaudeCodeMonitor.shared.start()
+                    } else {
+                        ClaudeCodeMonitor.shared.stop()
+                    }
+                }
+            }
 
         // Observe changes to hudReplacement
         hudReplacementCancellable = Defaults.publisher(.hudReplacement)

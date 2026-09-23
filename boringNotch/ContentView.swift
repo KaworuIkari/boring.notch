@@ -23,6 +23,7 @@ struct ContentView: View {
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
+    @ObservedObject var claudeMonitor = ClaudeCodeMonitor.shared
     @State private var hoverTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
     @State private var anyDropDebounceTask: Task<Void, Never>?
@@ -58,6 +59,17 @@ struct ContentView: View {
         )
     }
 
+    /// The pet takes the idle slot in the closed notch: no music playing, nothing else to show.
+    private var showClaudePet: Bool {
+        guard Defaults[.showClaudePet] else { return false }
+        return claudeMonitor.activity != .idle || Defaults[.claudePetVisibleWhenIdle]
+    }
+
+    private var isClosedAndIdle: Bool {
+        !coordinator.expandingView.show && vm.notchState == .closed
+            && !musicManager.isPlaying && musicManager.isPlayerIdle && !vm.hideOnClosed
+    }
+
     private var computedChinWidth: CGFloat {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
@@ -70,10 +82,7 @@ struct ContentView: View {
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
         {
             chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        } else if !coordinator.expandingView.show && vm.notchState == .closed
-            && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace]
-            && !vm.hideOnClosed
-        {
+        } else if isClosedAndIdle && (Defaults[.showNotHumanFace] || showClaudePet) {
             chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
         }
 
@@ -290,7 +299,9 @@ struct ContentView: View {
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
                           MusicLiveActivity()
                               .frame(alignment: .center)
-                      } else if !coordinator.expandingView.show && vm.notchState == .closed && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace] && !vm.hideOnClosed  {
+                      } else if isClosedAndIdle && showClaudePet {
+                          ClaudePetLiveActivity()
+                      } else if isClosedAndIdle && Defaults[.showNotHumanFace] {
                           BoringFaceAnimation()
                        } else if vm.notchState == .open {
                            BoringHeader()
@@ -385,6 +396,30 @@ struct ContentView: View {
         )
     }
 
+    /// Badge on one side of the camera, pet on the other, mirroring the music live activity.
+    @ViewBuilder
+    func ClaudePetLiveActivity() -> some View {
+        let side = max(0, vm.effectiveClosedNotchHeight - 12)
+
+        HStack(spacing: 0) {
+            ClaudePetStatusBadge(activity: claudeMonitor.activity)
+                .frame(width: side, height: side)
+
+            // The gap must clear the camera housing, plus a little margin on each side,
+            // otherwise both wings sit underneath it. Matches the chin width above.
+            Rectangle()
+                .fill(.black)
+                .frame(width: vm.closedNotchSize.width + 20)
+
+            ClaudePetView(activity: claudeMonitor.activity)
+                .frame(width: side, height: side)
+        }
+        .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
+        .onTapGesture {
+            doOpen()
+        }
+    }
+
     @ViewBuilder
     func MusicLiveActivity() -> some View {
         HStack {
@@ -397,9 +432,11 @@ struct ContentView: View {
                 )
                 .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
                 .frame(
-                    width: max(0, vm.effectiveClosedNotchHeight - 12),
-                    height: max(0, vm.effectiveClosedNotchHeight - 12)
+                    width: max(0, vm.effectiveClosedNotchHeight - 9),
+                    height: max(0, vm.effectiveClosedNotchHeight - 9)
                 )
+                // Nudges the artwork left without moving anything else. More negative = further left.
+                .offset(x: -0.95, y: -2.5)
 
             Rectangle()
                 .fill(.black)
@@ -445,7 +482,7 @@ struct ContentView: View {
                         && Defaults[.sneakPeekStyles] == .inline)
                         ? 380
                         : vm.closedNotchSize.width
-                            + -cornerRadiusInsets.closed.top
+                            + -cornerRadiusInsets.closed.top 
                 )
 
             HStack {

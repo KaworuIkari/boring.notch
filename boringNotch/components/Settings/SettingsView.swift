@@ -1164,6 +1164,8 @@ struct Appearance: View {
     @Default(.useMusicVisualizer) var useMusicVisualizer
     @Default(.customVisualizers) var customVisualizers
     @Default(.selectedVisualizer) var selectedVisualizer
+    @Default(.showClaudePet) var showClaudePet
+    @ObservedObject var claudeMonitor = ClaudeCodeMonitor.shared
 
     let icons: [String] = ["logo2"]
     @State private var selectedIcon: String = "logo2"
@@ -1389,6 +1391,35 @@ struct Appearance: View {
                 }
                 Defaults.Toggle(key: .showNotHumanFace) {
                     Text("Show cool face animation while inactive")
+                }
+                Defaults.Toggle(key: .showClaudePet) {
+                    Text("Show Claude Code pet")
+                }
+                Defaults.Toggle(key: .claudePetVisibleWhenIdle) {
+                    Text("Keep the pet visible while Claude is idle")
+                }
+                .disabled(!showClaudePet)
+                if showClaudePet {
+                    HStack(spacing: 10) {
+                        ClaudePetView(activity: claudeMonitor.activity)
+                            .frame(width: 34, height: 34)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(claudeMonitor.isListening ? "Listening on port \(String(ClaudeCodeMonitor.port))" : "Not listening")
+                                .font(.callout)
+                            Text("Run the hook installer in Scripts/install-claude-pet-hooks.sh to connect Claude Code.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Menu("Preview") {
+                            ForEach(ClaudeCodeActivity.allCases, id: \.self) { activity in
+                                Button(activity.rawValue.capitalized) {
+                                    claudeMonitor.report(activity)
+                                }
+                            }
+                        }
+                        .frame(width: 100)
+                    }
                 }
             } header: {
                 HStack {
