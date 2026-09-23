@@ -436,7 +436,7 @@ struct ContentView: View {
                     height: max(0, vm.effectiveClosedNotchHeight - 9)
                 )
                 // Nudges the artwork left without moving anything else. More negative = further left.
-                .offset(x: -0.95, y: -2.5)
+                .offset(x: -0.95, y: -2)
 
             Rectangle()
                 .fill(.black)
